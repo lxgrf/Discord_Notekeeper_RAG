@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import discord
 from discord import app_commands
+from llm_utils import get_answer
 
 class GuildCheckFailure(app_commands.errors.CheckFailure):
     pass
@@ -20,6 +21,7 @@ tree = app_commands.CommandTree(bot)
 
 # List of approved guild IDs
 APPROVED_GUILDS = [1114617197931790376]
+GUILD_DATABASES = {1114617197931790376:"8d5dc8537d04457fa92a543a83ac397b"}
 
 def guild_check():
     @app_commands.check
@@ -48,23 +50,24 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-@tree.command(name="hello", description="Get a friendlty greeting from the bot! (And prove that it's responsive)")
-@guild_check
+@tree.command(name="hello", description="Get a friendly greeting from the bot! (And prove that it's responsive)")
+@guild_check()
 async def hello(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Hello, {interaction.use.name}!")
+    await interaction.response.send_message(f"Hello, {interaction.user.name}!")
 
 @tree.command(name="ask", description = "Ask the bot a question")
-@guild_check
+@guild_check()
 async def ask(interaction: discord.Interaction, question: str):
     await interaction.response.defer(thinking=True)
-
-    #TODO Carry out local LLM query
-
-    await interaction.followup.send("This function has not yet been implemented.")
+    dbase = GUILD_DATABASES[interaction.guild_id]
+    response = f"**Question**: {question}\n\n"
+    answer = get_answer(dbase=dbase,question=question)
+    response += "**Answer**: {answer}"
+    await interaction.followup.send(response)
 
 @tree.command(name="update",description="Update the database. This may take a few minutes.")
-@guild_check
-@authority_check
+@guild_check()
+@authority_check()
 async def update(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True)
 
