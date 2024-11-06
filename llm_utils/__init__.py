@@ -1,3 +1,3 @@
-from .embeddings import get_embeddings as get_embeddings
+from .embeddings import get_embeddings, get_answer
 
-__all__ = ['get_embeddings']
+__all__ = ['get_embeddings','get_answer']
