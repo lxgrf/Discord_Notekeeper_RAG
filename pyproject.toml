@@ -12,4 +12,7 @@ dependencies = [
     "langchain-community>=0.3.5",
     "langchain-ollama>=0.2.0",
     "pandas>=2.2.3",
+    "discord>=2.3.2",
+    "python-dotenv>=1.0.1",
+    "notion-client>=2.2.1",
 ]
