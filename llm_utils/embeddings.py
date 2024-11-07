@@ -15,16 +15,14 @@ persist_directory_root = project_root / "chroma_db"
 embedding_model = OllamaEmbeddings(model="all-minilm:l6-v2")
 answer_model = ChatOllama(model="llama3.1")
 
-def get_embeddings(dbase: str, force_refresh=False):
-    persist_directory = f"{persist_directory_root}/{dbase}"
-
+def get_embeddings(guild: int, force_refresh=False):
+    persist_directory = f"{persist_directory_root}/{guild}"
     if not os.path.exists(persist_directory) or force_refresh == True:
         documents = []
-        for content, source in fetch_docs_from_Notion(dbase):
+        for content, source in fetch_docs_from_Notion(guild):
             doc = Document(page_content=content,
                         metadata={"source":source if source else ""})
             documents.append(doc)
-        
         vectors = Chroma.from_documents(documents=documents,
                                         persist_directory=persist_directory,
                                         embedding=embedding_model)
@@ -34,10 +32,10 @@ def get_embeddings(dbase: str, force_refresh=False):
         
     return vectors
 
-def get_answer(question:str,dbase:str):
-    vectors = get_embeddings(dbase=dbase)
+def get_answer(question:str,guild:int):
+    vectors = get_embeddings(guild)
     retriever = vectors.as_retriever(search_type="mmr",
-                                     search_kwargs={"k":12,
+                                     search_kwargs={"k":15,
                                                     "alpha":0.7})
     qa_chain = RetrievalQA.from_chain_type(llm=answer_model,
                                            chain_type="stuff",
@@ -46,5 +44,5 @@ def get_answer(question:str,dbase:str):
     return result['result']
 
 if __name__ == "__main__":
-    vectors = get_embeddings(dbase="8d5dc8537d04457fa92a543a83ac397b",force_refresh=True)
+    vectors = get_embeddings(guild="8d5dc8537d04457fa92a543a83ac397b",force_refresh=True)
     print(vectors)

@@ -1,9 +1,7 @@
 from notion_client import Client
 from dotenv import load_dotenv
-import sys
 from pathlib import Path
 import os
-from langchain_community.document_loaders import NotionDBLoader
 
 project_root = Path(__file__).parents[1]
 load_dotenv(dotenv_path=project_root / ".env")
@@ -11,27 +9,65 @@ NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 
 notion = Client(auth=NOTION_API_KEY)
 
-def fetch_docs_from_Notion(database_id: str) -> list[list[str]]:
+GUILD_DATABASES = {1114617197931790376:{"facts":"8d5dc8537d04457fa92a543a83ac397b",
+                                        "objectives":"050c74f590074074a7a12dac13634fd2", 
+                                        "mysteries":"110015bedb97808489dad017c1583991", 
+                                        "lore":"128015bedb9780fdb79bd7c01487627d",
+                                        }}
+
+def fetch_docs_from_Notion(guild_id: str) -> list[list[str]]:
     '''
     Takes a notion database ID
     Returns a list of [fact, url] pairs
     '''
+    dbase = GUILD_DATABASES[guild_id]
     formatted_docs = []
-    has_more = True
-    next_cursor = None
-    raw_docs = []
 
-    while has_more:
-        response = notion.databases.query(database_id,
-                                          start_cursor = next_cursor)
-        raw_docs.extend(response['results'])
-        has_more = response['has_more']
-        next_cursor = response['next_cursor']
+    for key in dbase.keys():
+        has_more = True
+        next_cursor = None
+        raw_docs = []
+        if dbase[key]:
+            dbase_id = dbase[key]
 
-    for doc in raw_docs:
-        fdoc = [doc['properties']['Name']['title'][0]['text']['content'], # Fact
-                doc['properties']['URL']['url']] # URL
-        formatted_docs.append(fdoc)
+            while has_more:
+                response = notion.databases.query(dbase_id,
+                                                start_cursor = next_cursor)
+                raw_docs.extend(response['results'])
+                has_more = response['has_more']
+                next_cursor = response['next_cursor']
+
+            for doc in raw_docs:
+                fdoc = False
+                if key == "lore":
+                    fdoc = ["Setting Lore " + doc['properties']['Name']['title'][0]['text']['content'], 
+                            # doc['properties']['URL']['url'],
+                            ""
+                            ] # URL
+                elif key == "facts":
+                        fdoc = [doc['properties']['Name']['title'][0]['text']['content'], 
+                        # doc['properties']['URL']['url']
+                        ""] # URL
+                elif key == "mysteries":
+                    if len(doc['properties']['Answer']['relation'])==0: # If unanswered
+                        fdoc = [doc['properties']['Question']['title'][0]['text']['content'], 
+                        # doc['properties']['URL']['url']
+                        ""]     
+                elif key == "objectives":
+                    if doc['properties']['Status']['status']['name'] == "Not started":
+                        prefix = "Unstarted Objective: "
+                    elif doc['properties']['Status']['status']['name'] == "In progress":
+                        prefix = "In-progress Objective: "
+                    elif doc['properties']['Status']['status']['name'] == "Failed":
+                        prefix = "Objective failed: "
+                    elif doc['properties']['Status']['status']['name'] == "Done":
+                        prefix = "Objective complete: "
+                    fdoc = [prefix + doc['properties']['Name']['title'][0]['text']['content'], 
+                    #doc['properties']['URL']['url'] #TODO - bring this back
+                    ""
+                    ] 
+                if fdoc:        
+                    formatted_docs.append(fdoc)
 
     return formatted_docs
 

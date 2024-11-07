@@ -21,7 +21,6 @@ tree = app_commands.CommandTree(bot)
 
 # List of approved guild IDs
 APPROVED_GUILDS = [1114617197931790376]
-GUILD_DATABASES = {1114617197931790376:"8d5dc8537d04457fa92a543a83ac397b"}
 
 def guild_check():
     @app_commands.check
@@ -59,9 +58,8 @@ async def hello(interaction: discord.Interaction):
 @guild_check()
 async def ask(interaction: discord.Interaction, question: str):
     await interaction.response.defer(thinking=True)
-    dbase = GUILD_DATABASES[interaction.guild_id]
     response = f"**Question**: {question}\n\n"
-    answer = get_answer(dbase=dbase,question=question)
+    answer = get_answer(guild=interaction.guild_id,question=question)
     response += f"**Answer**: {answer}"
     await interaction.followup.send(response)
 
@@ -70,7 +68,7 @@ async def ask(interaction: discord.Interaction, question: str):
 @authority_check()
 async def update(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True)
-    get_embeddings(dbase=GUILD_DATABASES[interaction.guild_id],force_refresh=True)
+    get_embeddings(guild=interaction.guild_id,force_refresh=True)
     await interaction.followup.send("The knowledge database has been updated.")
 
 @tree.error
