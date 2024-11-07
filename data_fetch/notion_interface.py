@@ -15,67 +15,81 @@ GUILD_DATABASES = {1114617197931790376:{"facts":"8d5dc8537d04457fa92a543a83ac397
                                         "lore":"128015bedb9780fdb79bd7c01487627d",
                                         }}
 
-def fetch_docs_from_Notion(guild_id: str) -> list[list[str]]:
-    '''
-    Takes a notion database ID
-    Returns a list of [fact, url] pairs
-    '''
-    dbase = GUILD_DATABASES[guild_id]
-    formatted_docs = []
+def fetch_docs_from_Notion(guild_id: int) -> list[list[str]]:
+    """
+    Fetches documents from various Notion databases associated with a guild.
+    
+    Args:
+        guild_id: The Discord guild ID
+    Returns:
+        A list of [content, url] pairs from the databases
+    """
+    # ... existing imports and setup ...
 
-    for key in dbase.keys():
-        has_more = True
+    def query_database(database_id: str) -> list[dict]:
+        """Helper function to handle pagination"""
+        results = []
         next_cursor = None
-        raw_docs = []
-        if dbase[key]:
-            dbase_id = dbase[key]
+        
+        while True:
+            response = notion.databases.query(database_id, start_cursor=next_cursor)
+            results.extend(response['results'])
+            if not response['has_more']:
+                break
+            next_cursor = response['next_cursor']
+        
+        return results
 
-            while has_more:
-                response = notion.databases.query(dbase_id,
-                                                start_cursor = next_cursor)
-                raw_docs.extend(response['results'])
-                has_more = response['has_more']
-                next_cursor = response['next_cursor']
+    def format_objective(status: str, name: str) -> str:
+        """Helper function to format objective strings"""
+        status_prefixes = {
+            "Not started": "Unstarted Objective: ",
+            "In progress": "In-progress Objective: ",
+            "Failed": "Objective failed: ",
+            "Done": "Objective complete: "
+        }
+        return f"{status_prefixes.get(status, '')} {name}"
 
-            for doc in raw_docs:
-                fdoc = False
-                if key == "lore":
-                    fdoc = ["Setting Lore " + doc['properties']['Name']['title'][0]['text']['content'], 
-                            # doc['properties']['URL']['url'],
-                            ""
-                            ] # URL
-                elif key == "facts":
-                        fdoc = [doc['properties']['Name']['title'][0]['text']['content'], 
-                        # doc['properties']['URL']['url']
-                        ""] # URL
-                elif key == "mysteries":
-                    if len(doc['properties']['Answer']['relation'])==0: # If unanswered
-                        fdoc = [doc['properties']['Question']['title'][0]['text']['content'], 
-                        # doc['properties']['URL']['url']
-                        ""]     
-                elif key == "objectives":
-                    if doc['properties']['Status']['status']['name'] == "Not started":
-                        prefix = "Unstarted Objective: "
-                    elif doc['properties']['Status']['status']['name'] == "In progress":
-                        prefix = "In-progress Objective: "
-                    elif doc['properties']['Status']['status']['name'] == "Failed":
-                        prefix = "Objective failed: "
-                    elif doc['properties']['Status']['status']['name'] == "Done":
-                        prefix = "Objective complete: "
-                    fdoc = [prefix + doc['properties']['Name']['title'][0]['text']['content'], 
-                    #doc['properties']['URL']['url'] #TODO - bring this back
-                    ""
-                    ] 
-                if fdoc:        
-                    formatted_docs.append(fdoc)
+    formatted_docs = []
+    databases = GUILD_DATABASES.get(guild_id, {})
+
+    for db_type, db_id in databases.items():
+        if not db_id:
+            continue
+
+        raw_docs = query_database(db_id)
+        
+        for doc in raw_docs:
+            formatted_doc = None
+            
+            if db_type == "lore":
+                formatted_doc = [
+                    f"Setting Lore {doc['properties']['Name']['title'][0]['text']['content']}", 
+                    ""  # URL placeholder
+                ]
+            elif db_type == "facts":
+                formatted_doc = [
+                    doc['properties']['Name']['title'][0]['text']['content'],
+                    ""  # URL placeholder
+                ]
+            elif db_type == "mysteries":
+                if not doc['properties']['Answer']['relation']:  # If unanswered
+                    formatted_doc = [
+                        doc['properties']['Question']['title'][0]['text']['content'],
+                        ""  # URL placeholder
+                    ]
+            elif db_type == "objectives":
+                status = doc['properties']['Status']['status']['name']
+                name = doc['properties']['Name']['title'][0]['text']['content']
+                formatted_doc = [
+                    format_objective(status, name),
+                    ""  # URL placeholder
+                ]
+
+            if formatted_doc:
+                formatted_docs.append(formatted_doc)
 
     return formatted_docs
-
-    # Alright what's the way to do this. Relations are all done by object id, so if we want to compile
-    # by object then we will need to page through all _other_ databases to make it meaningful. Which
-    # is an absolute pain. Just take each title as a doc in its own right, and leave a wide k window?
-
-        
 
 if __name__ == "__main__":
     docs = fetch_docs_from_Notion("8d5dc8537d04457fa92a543a83ac397b")
