@@ -1,7 +1,7 @@
 [project]
 name = "local-rag"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Discord bot for answering natural language questions from a Notion database."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
