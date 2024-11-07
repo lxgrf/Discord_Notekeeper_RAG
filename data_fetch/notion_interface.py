@@ -2,6 +2,7 @@ from notion_client import Client
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+from functools import reduce
 
 project_root = Path(__file__).parents[1]
 load_dotenv(dotenv_path=project_root / ".env")
@@ -12,8 +13,13 @@ notion = Client(auth=NOTION_API_KEY)
 GUILD_DATABASES = {1114617197931790376:{"facts":"8d5dc8537d04457fa92a543a83ac397b",
                                         "objectives":"050c74f590074074a7a12dac13634fd2", 
                                         "mysteries":"110015bedb97808489dad017c1583991", 
-                                        "lore":"128015bedb9780fdb79bd7c01487627d",
                                         }}
+
+def get_nested(dictionary, keys, default=None):
+    try:
+        return reduce(lambda d, key: d[key] if d else default, keys, dictionary)
+    except (KeyError, IndexError, TypeError):
+        return default
 
 def fetch_docs_from_Notion(guild_id: int) -> list[list[str]]:
     """
@@ -33,10 +39,10 @@ def fetch_docs_from_Notion(guild_id: int) -> list[list[str]]:
         
         while True:
             response = notion.databases.query(database_id, start_cursor=next_cursor)
-            results.extend(response['results'])
-            if not response['has_more']:
+            results.extend(response.get('results',None))
+            if not response.get('has_more',False):
                 break
-            next_cursor = response['next_cursor']
+            next_cursor = response.get('next_cursor',None)
         
         return results
 
@@ -62,29 +68,26 @@ def fetch_docs_from_Notion(guild_id: int) -> list[list[str]]:
         for doc in raw_docs:
             formatted_doc = None
             
-            if db_type == "lore":
-                formatted_doc = [
-                    f"Setting Lore {doc['properties']['Name']['title'][0]['text']['content']}", 
-                    ""  # URL placeholder
-                ]
-            elif db_type == "facts":
-                formatted_doc = [
-                    doc['properties']['Name']['title'][0]['text']['content'],
-                    ""  # URL placeholder
-                ]
+            if db_type == "facts":
+                title = get_nested(doc, ['properties', 'Name', 'title', 0, 'text', 'content'])
+                url = get_nested(doc,['properties','URL','url'],default="")
+                if title:
+                    formatted_doc = [title,url]
+
             elif db_type == "mysteries":
-                if not doc['properties']['Answer']['relation']:  # If unanswered
-                    formatted_doc = [
-                        doc['properties']['Question']['title'][0]['text']['content'],
-                        ""  # URL placeholder
-                    ]
+                answer = get_nested(doc, ['properties', 'Answer', 'relation'])
+                question = get_nested(doc, ['properties', 'Question', 'title', 0, 'text', 'content'])
+                url = get_nested(doc,['properties','URL','url'],default="")
+                if question and not answer:
+                    formatted_doc = [question, url]
+                elif question and answer:
+                    formatted_doc = ["Solved Mystery: " + question,url]
+
             elif db_type == "objectives":
-                status = doc['properties']['Status']['status']['name']
-                name = doc['properties']['Name']['title'][0]['text']['content']
-                formatted_doc = [
-                    format_objective(status, name),
-                    ""  # URL placeholder
-                ]
+                status = get_nested(doc, ['properties', 'Status', 'status', 'name'])
+                name = get_nested(doc, ['properties', 'Name', 'title', 0, 'text', 'content'])
+                if status and name:
+                    formatted_doc = [format_objective(status, name),""]
 
             if formatted_doc:
                 formatted_docs.append(formatted_doc)
