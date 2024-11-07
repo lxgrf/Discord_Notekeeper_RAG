@@ -136,8 +136,8 @@ Ollama is required to host the local LLM. Follow these steps to set up:
 ollama pull llama3.1
 ollama pull all-minilm:l6-v2
 ```
-`all-minilm:l6-v2` is used as part of the RAG pipeline, creating data embeddings and retrieving data from the embedding cache. This model is extremely small and should run on almost any hardware. 
-`llama3.1` is used to process the retrieved data and generate an answer. This model is a little larger - if you run into issues running it, feel free to substitute for a smaller model (or a larger one, if you have the compute resources). Simply update the value of `answer_model` in `llm_utils/embeddings.py`
+- `all-minilm:l6-v2` is used as part of the RAG pipeline, creating data embeddings and retrieving data from the embedding cache. This model is extremely small and should run on almost any hardware. 
+- `llama3.1` is used to process the retrieved data and generate an answer. This model is a little larger - if you run into issues running it, feel free to substitute for a smaller model (or a larger one, if you have the compute resources). Simply update the value of `answer_model` in `llm_utils/embeddings.py`
 
 
 ### Embeddings
