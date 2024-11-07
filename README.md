@@ -90,12 +90,16 @@ The `embeddings.py` module handles text embeddings to support improved query han
 ## Usage
 After setting up and running the bot:
 - **Add Bot to Discord Server**: Invite your bot to your Discord server using the OAuth2 URL generated in the Discord Developer Portal.
-- **Ask Questions in Discord**: Users can interact with the bot by mentioning it or using a command prefix. Example:
+- **Ask Questions in Discord**: Users can interact with the bot using Discord Slash commands. For example:
   ```
-  @BotName Can you summarize the latest data on <topic>?
+  /ask Can you summarize the latest data on <topic>?
   ```
 
-The bot will respond by querying the Notion database and processing the response with the locally hosted LLM to generate a natural language answer.
+The first time a question is asked it may take slightly longer as the bot fetches the data, creates embeddings, and caches them locally. If there is new data and you wish to update this cache:
+```
+/update
+```
+will force an update. Note that you need to have either the Admin or Lorekeeper Discord rules to use this command.
 
 ## Contributing
 Contributions are welcome! Please fork the repository, create a feature branch, and submit a pull request. Ensure that your code adheres to the project’s code style and that you’ve tested your changes.
