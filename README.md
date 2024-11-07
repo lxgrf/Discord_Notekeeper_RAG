@@ -79,10 +79,66 @@ _NOTE - This bot was written to pull information from a [specific Notion templat
 ## Configuration
 
 ### Notion Integration
-The bot relies on a Notion integration to retrieve data. Configure the `NOTION_API_KEY` and `DISCORD_NOTEKEEPER_KEY` environment variables to enable data access.
+The bot relies on a Notion integration to retrieve data. Follow these steps to set up your integration:
+
+1. Go to [Notion Integrations Page](https://www.notion.so/my-integrations)
+2. Click "New integration"
+3. Name your integration (e.g., "Discord Bot")
+4. Select the workspace where your database is located
+5. Configure the capabilities (required permissions):
+   - Read content
+   - Read user information
+   - Read comments
+6. Click "Submit" to create the integration
+7. Copy the "Internal Integration Token" - this will be your `NOTION_API_KEY`
+8. Go to your Notion database page
+9. Click the "..." menu in the top right
+10. Select "Add connections" and choose your new integration
+
+After setup, configure the `NOTION_API_KEY` environment variable with your integration token.
+
+> ⚠️ **Important**: Keep your Notion token secret! Never share it or commit it to version control.
+
+### Discord Bot Setup
+To create and configure your Discord bot:
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" and give it a name
+3. Go to the "Bot" section in the left sidebar
+4. Click "Add Bot"
+5. Under the bot's username, click "Reset Token" and copy the new token - this will be your `DISCORD_NOTEKEEPER_KEY`
+6. Enable these options under "Privileged Gateway Intents":
+   - Message Content Intent
+   - Server Members Intent
+   - Presence Intent
+7. Go to "OAuth2" → "URL Generator" in the left sidebar
+8. Select these scopes:
+   - `bot`
+   - `applications.commands`
+9. Select these bot permissions:
+   - Read Messages/View Channels
+   - Send Messages
+   - Use Slash Commands
+10. Copy the generated URL at the bottom and use it to invite the bot to your server
+
+After setup, configure the `DISCORD_NOTEKEEPER_KEY` environment variable with your bot token.
+
+> ⚠️ **Important**: Keep your bot token secret! Never share it or commit it to version control.
+
 
 ### Ollama LLM
-Ollama is required to host the local LLM. Ensure Ollama is installed and configured locally. No additional configuration within this project should be necessary for Ollama beyond installation.
+Ollama is required to host the local LLM. Follow these steps to set up:
+
+1. Install Ollama for your platform from [ollama.ai](https://ollama.ai)
+
+2. Download the required models by running these commands in your terminal:
+```bash
+ollama pull llama3.1
+ollama pull all-minilm:l6-v2
+```
+`all-minilm:l6-v2` is used as part of the RAG pipeline, creating data embeddings and retrieving data from the embedding cache. This model is extremely small and should run on almost any hardware. 
+`llama3.1` is used to process the retrieved data and generate an answer. This model is a little larger - if you run into issues running it, feel free to substitute for a smaller model (or a larger one, if you have the compute resources). Simply update the value of `answer_model` in `llm_utils/embeddings.py`
+
 
 ### Embeddings
 The `embeddings.py` module handles text embeddings to support improved query handling. Fine-tuning embeddings may be necessary for specialized use cases or large databases.
