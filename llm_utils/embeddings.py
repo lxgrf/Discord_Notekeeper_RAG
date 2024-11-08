@@ -9,6 +9,12 @@ import sys
 sys.path.append(str(Path(__file__).parents[1]))
 from data_fetch import fetch_docs_from_Notion
 
+
+"""
+Utility module for managing embeddings and question-answering functionality using LangChain and Ollama.
+This module handles document embedding storage and retrieval for a question-answering system.
+"""
+
 project_root = Path(__file__).parents[1]
 persist_directory_root = project_root / "chroma_db"
 
@@ -16,6 +22,20 @@ embedding_model = OllamaEmbeddings(model="all-minilm:l6-v2")
 answer_model = ChatOllama(model="llama3.1")
 
 def get_embeddings(guild: int, force_refresh=False):
+    """
+    Retrieve or create document embeddings for a specific guild.
+
+    Args:
+        guild (int): The guild ID to fetch embeddings for
+        force_refresh (bool, optional): Force regeneration of embeddings. Defaults to False.
+
+    Returns:
+        Chroma: A Chroma vector store instance containing the document embeddings
+
+    Note:
+        Documents are fetched from Notion if embeddings don't exist or force_refresh is True.
+        Embeddings are persisted to disk in the chroma_db directory.
+    """
     persist_directory = f"{persist_directory_root}/{guild}"
     if not os.path.exists(persist_directory) or force_refresh == True:
         documents = []
@@ -32,7 +52,21 @@ def get_embeddings(guild: int, force_refresh=False):
         
     return vectors
 
-def get_answer(question:str,guild:int):
+def get_answer(question:str,guild:int) -> str:
+    """
+    Generate an answer to a question using the guild's document embeddings.
+
+    Args:
+        question (str): The question to answer
+        guild (int): The guild ID to use for context
+
+    Returns:
+        str: The generated answer based on relevant document context
+
+    Note:
+        Uses Maximum Marginal Relevance (MMR) for document retrieval and
+        the 'stuff' chain type for question answering.
+    """
     vectors = get_embeddings(guild)
     retriever = vectors.as_retriever(search_type="mmr",
                                      search_kwargs={"k":15,
